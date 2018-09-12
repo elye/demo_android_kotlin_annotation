@@ -1,8 +1,7 @@
 package com.elyeproj.annotationexperiment
 
-import android.app.Activity
-import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import com.elyeproj.annotation.CheckCamelSource
 import com.elyeproj.annotation.GenerateSource
@@ -29,7 +28,7 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG, "Finally $reflectTest $generateTest")
     }
 
-    private fun bindReflectionValue(target: Activity) {
+    private fun bindReflectionValue(target: Any) {
         val declaredFields = target::class.java.declaredFields
 
         for (field in declaredFields) {
