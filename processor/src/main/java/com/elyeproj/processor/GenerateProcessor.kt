@@ -1,11 +1,14 @@
 package com.elyeproj.processor
 
+import com.elyeproj.annotation.CheckCamelSource
 import com.elyeproj.annotation.GenerateSource
 import com.google.auto.service.AutoService
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.asTypeName
+import jdk.internal.org.objectweb.asm.tree.ClassNode
+import org.jetbrains.annotations.Nullable
 import java.io.File
 import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.Processor
@@ -15,6 +18,7 @@ import javax.annotation.processing.SupportedSourceVersion
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
+import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
 import javax.tools.Diagnostic
 
@@ -33,6 +37,16 @@ class GenerateProcessor : AbstractProcessor() {
     private val generatedSourcesRoot by lazy { processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME].orEmpty() }
 
     override fun process(annotations: MutableSet<out TypeElement>, roundEnv: RoundEnvironment): Boolean {
+
+        roundEnv.getElementsAnnotatedWith(CheckCamelSource::class.java).forEach { classElement ->
+            if (classElement.kind != ElementKind.CLASS) {
+                printError("Can only be applied to field, element: $classElement")
+                return false
+            } else {
+                checkCamelVariable(classElement as TypeElement)
+            }
+        }
+
         if (generatedSourcesRoot.isEmpty()) {
             printError("Can't find the target directory for generated Kotlin files.")
             return false
@@ -47,6 +61,21 @@ class GenerateProcessor : AbstractProcessor() {
             }
         }
         return false
+    }
+
+    private fun checkCamelVariable(classElement: TypeElement) {
+        classElement.enclosedElements.filter {
+            !it.simpleName.toString().isDefinedCamelCase()
+        }.forEach {
+            printWarning("Detected non-camelcase name: ${it.simpleName}.")
+        }
+    }
+
+    private fun String.isDefinedCamelCase(): Boolean {
+        val toCharArray = toCharArray()
+        return toCharArray
+                .mapIndexed { index, current -> current to toCharArray.getOrNull(index + 1) }
+                .none { it.first.isUpperCase() && it.second?.isUpperCase() ?: false }
     }
 
     private fun prepareFieldInitialization(fieldElement: Element) {
@@ -66,5 +95,9 @@ class GenerateProcessor : AbstractProcessor() {
 
     private fun printError(message: String) {
         processingEnv.messager.printMessage(Diagnostic.Kind.ERROR, message)
+    }
+
+    private fun printWarning(message: String) {
+        processingEnv.messager.printMessage(Diagnostic.Kind.WARNING, message)
     }
 }

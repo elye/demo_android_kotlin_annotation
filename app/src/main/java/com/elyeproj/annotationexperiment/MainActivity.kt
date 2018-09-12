@@ -4,8 +4,10 @@ import android.app.Activity
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import com.elyeproj.annotation.CheckCamelSource
 import com.elyeproj.annotation.GenerateSource
 
+@CheckCamelSource
 class MainActivity : AppCompatActivity() {
 
     companion object {
